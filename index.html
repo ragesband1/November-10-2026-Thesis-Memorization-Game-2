@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thesis Memorization Game</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            bg: '#0a0f1d',
+                            panel: '#111827',
+                            border: '#1f293d',
+                            neon: '#00ffcc',
+                            purple: '#a855f7',
+                            pink: '#ec4899',
+                            yellow: '#facc15'
+                        }
+                    },
+                    boxShadow: {
+                        'neon': '0 0 15px rgba(0, 255, 204, 0.3)',
+                        'neon-pink': '0 0 15px rgba(236, 72, 153, 0.3)',
+                        'neon-yellow': '0 0 15px rgba(250, 204, 21, 0.4)'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts Inter & Orbitron -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #070a14;
+            color: #f3f4f6;
+            overflow-x: hidden;
+        }
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        .glow-text {
+            text-shadow: 0 0 10px rgba(0, 255, 204, 0.5), 0 0 20px rgba(0, 255, 204, 0.3);
+        }
+        .glow-pink {
+            text-shadow: 0 0 10px rgba(236, 72, 153, 0.5);
+        }
+        .cyber-card {
+            background: linear-gradient(135deg, rgba(17, 24, 39, 0.9) 0%, rgba(10, 15, 29, 0.95) 100%);
+            border: 1px solid rgba(0, 255, 204, 0.2);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+        .highlight-yellow {
+            background-color: rgba(250, 204, 21, 0.25);
+            color: #fde047;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px dashed rgba(250, 204, 21, 0.5);
+            font-weight: 600;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0f1d;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f293d;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00ffcc;
+        }
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.8; box-shadow: 0 0 10px rgba(0,255,204,0.3); }
+            50% { opacity: 1; box-shadow: 0 0 25px rgba(0,255,204,0.7); }
+        }
+        .animate-pulse-glow {
+            animation: pulseGlow 2.5s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-black">
+
+    <!-- Background Matrix / Grid Canvas -->
+    <canvas id="bg-canvas" class="fixed inset-0 pointer-events-none z-0 opacity-20"></canvas>
+
+    <!-- Top Header -->
+    <header class="relative z-10 border-b border-cyan-500/30 bg-cyber-bg/80 backdrop-blur-md sticky top-0 px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-400 glow-text font-orbitron font-bold text-lg">
+                TH
+            </div>
+            <div>
+                <h1 class="font-orbitron font-bold text-base md:text-xl text-cyan-400 tracking-wider">THESIS MEMORIZATION GAME</h1>
+                <p class="text-xs text-gray-400">AI Defense Simulator &bull; Ian Patrick C. Batungbacal (ABMMA)</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-4">
+            <!-- Audio Toggle -->
+            <button id="audio-toggle-btn" onclick="toggleAudio()" class="px-3 py-1.5 rounded-lg bg-cyber-panel border border-cyan-500/40 text-cyan-400 text-xs md:text-sm flex items-center space-x-2 hover:bg-cyan-500/10 transition">
+                <i id="audio-icon" class="fas fa-volume-up"></i>
+                <span id="audio-text" class="hidden sm:inline">Voice: ON</span>
+            </button>
+            <!-- Score Indicator -->
+            <div class="px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/40 text-purple-300 font-orbitron text-xs md:text-sm flex items-center space-x-2">
+                <i class="fas fa-bolt text-yellow-400"></i>
+                <span>Score: <strong id="header-score" class="text-white">0</strong></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="relative z-10 flex-grow container mx-auto px-4 py-6 max-w-5xl flex flex-col justify-center">
+
+        <!-- SCREEN 1: WELCOME / DASHBOARD -->
+        <div id="screen-welcome" class="cyber-card rounded-2xl p-6 md:p-10 text-center animate-pulse-glow">
+            <div class="inline-block px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-orbitron text-xs uppercase tracking-widest mb-4">
+                Defense Simulation Ready
+            </div>
+            <h2 class="font-orbitron text-2xl md:text-4xl font-extrabold text-white mb-4">
+                Factors that influence students using <span class="text-cyan-400 glow-text">Artificial Intelligence</span> for illustration and design
+            </h2>
+            <p class="text-gray-300 text-sm md:text-base max-w-2xl mx-auto mb-8">
+                Master your thesis defense with a cybernetic simulator. Review highlighted critical facts for 30 minutes, then face scrambled panel questions under 15 minutes! Note: Type using <strong class="text-yellow-400">letters and spaces only</strong> (no periods).
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-left">
+                <div class="p-4 rounded-xl bg-cyber-panel border border-blue-500/30">
+                    <div class="text-cyan-400 font-orbitron font-bold text-lg mb-1"><i class="fas fa-book-open mr-2"></i>Phase 1</div>
+                    <div class="text-xs text-gray-400">30-Minute Review Mode with Yellow Highlighted Keywords & AI Voice Narration.</div>
+                </div>
+                <div class="p-4 rounded-xl bg-cyber-panel border border-purple-500/30">
+                    <div class="text-purple-400 font-orbitron font-bold text-lg mb-1"><i class="fas fa-shield-alt mr-2"></i>Phase 2</div>
+                    <div class="text-xs text-gray-400">15-Minute Panelist Defense Drills. Scrambled prompt tests with strict spacing checks.</div>
+                </div>
+                <div class="p-4 rounded-xl bg-cyber-panel border border-pink-500/30">
+                    <div class="text-pink-400 font-orbitron font-bold text-lg mb-1"><i class="fas fa-volume-high mr-2"></i>AI Voice</div>
+                    <div class="text-xs text-gray-400">Web Speech API integration speaks questions, slides, and your typed inputs aloud.</div>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <button onclick="startReviewMode()" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-orbitron font-bold text-base hover:from-cyan-400 hover:to-blue-500 shadow-neon transition transform hover:-translate-y-0.5">
+                    <i class="fas fa-play mr-2"></i> START 30-MIN REVIEW
+                </button>
+                <button onclick="startDefenseMode()" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-orbitron font-bold text-base hover:from-purple-500 hover:to-pink-500 shadow-neon-pink transition transform hover:-translate-y-0.5">
+                    <i class="fas fa-gavel mr-2"></i> SKIP TO DEFENSE DRILL
+                </button>
+            </div>
+        </div>
+
+        <!-- SCREEN 2: REVIEW MODE (PHASE 1) -->
+        <div id="screen-review" class="hidden cyber-card rounded-2xl p-6 md:p-8">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-gray-800 pb-4 mb-6 gap-4">
+                <div>
+                    <span class="text-xs font-orbitron text-yellow-400 uppercase tracking-widest bg-yellow-400/10 px-3 py-1 rounded-full border border-yellow-400/30">Phase 1: Master Review</span>
+                    <h3 class="font-orbitron text-xl md:text-2xl font-bold text-white mt-2">Thesis Slides & Core Memorization Data</h3>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="px-4 py-2 rounded-xl bg-cyber-bg border border-cyan-500/40 text-cyan-400 font-orbitron text-sm flex items-center space-x-2">
+                        <i class="fas fa-clock"></i>
+                        <span id="review-timer">30:00</span>
+                    </div>
+                    <button onclick="speakCurrentReviewText()" class="px-3 py-2 rounded-lg bg-cyan-500/20 border border-cyan-400 text-cyan-300 hover:bg-cyan-500/30 text-xs font-orbitron">
+                        <i class="fas fa-volume-up"></i> Read Aloud
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab Switcher inside Review -->
+            <div class="flex flex-wrap gap-2 mb-6">
+                <button onclick="switchReviewTab('slides')" id="tab-btn-slides" class="px-4 py-2 rounded-lg font-orbitron text-xs bg-cyan-500 text-black font-bold transition">Slide Previews (1-19)</button>
+                <button onclick="switchReviewTab('questions')" id="tab-btn-questions" class="px-4 py-2 rounded-lg font-orbitron text-xs bg-cyber-panel text-gray-300 border border-gray-700 hover:border-cyan-500 transition">Panel Q&A (53 items)</button>
+                <button onclick="switchReviewTab('variables')" id="tab-btn-variables" class="px-4 py-2 rounded-lg font-orbitron text-xs bg-cyber-panel text-gray-300 border border-gray-700 hover:border-cyan-500 transition">Variables & RRL</button>
+            </div>
+
+            <!-- Review Content Container -->
+            <div id="review-content-box" class="bg-cyber-bg/80 border border-gray-800 rounded-xl p-5 md:p-6 max-h-[50vh] overflow-y-auto text-sm md:text-base leading-relaxed space-y-4">
+                <!-- Injected via JavaScript -->
+            </div>
+
+            <!-- Review Footer Controls -->
+            <div class="flex items-center justify-between mt-6 pt-4 border-t border-gray-800">
+                <button onclick="backToWelcome()" class="px-4 py-2 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 font-orbitron text-xs">
+                    <i class="fas fa-arrow-left mr-2"></i> Dashboard
+                </button>
+                <button onclick="startDefenseMode()" class="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-orbitron font-bold text-sm shadow-neon-pink hover:opacity-95 transition">
+                    PROCEED TO DEFENSE SIMULATION <i class="fas fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- SCREEN 3: DEFENSE SIMULATION MODE (PHASE 2) -->
+        <div id="screen-defense" class="hidden cyber-card rounded-2xl p-6 md:p-8">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-gray-800 pb-4 mb-6 gap-4">
+                <div>
+                    <span class="text-xs font-orbitron text-purple-400 uppercase tracking-widest bg-purple-400/10 px-3 py-1 rounded-full border border-purple-400/30">Phase 2: Panel Defense Simulation</span>
+                    <h3 id="defense-progress-title" class="font-orbitron text-lg md:text-xl font-bold text-white mt-2">Question 1 of 53</h3>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="px-4 py-2 rounded-xl bg-cyber-bg border border-purple-500/40 text-purple-300 font-orbitron text-sm flex items-center space-x-2">
+                        <i class="fas fa-hourglass-half"></i>
+                        <span id="defense-timer">15:00</span>
+                    </div>
+                    <div class="px-4 py-2 rounded-xl bg-cyber-bg border border-cyan-500/40 text-cyan-400 font-orbitron text-sm">
+                        Score: <span id="defense-score">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panelist Prompt Box -->
+            <div class="bg-cyber-bg/90 border border-purple-500/30 rounded-xl p-6 mb-6 relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 text-purple-500/10 font-orbitron text-9{-} font-bold pointer-events-none">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+                <div class="flex items-center space-x-2 text-purple-400 font-orbitron text-xs mb-2">
+                    <i class="fas fa-microphone-alt animate-pulse text-pink-400"></i>
+                    <span>Panelist Question Prompt:</span>
+                </div>
+                <h4 id="current-question-text" class="font-orbitron text-lg md:text-xl text-white font-semibold mb-4">
+                    Loading question...
+                </h4>
+                <button onclick="speakCurrentQuestion()" class="px-3 py-1.5 rounded-lg bg-purple-500/20 border border-purple-400 text-purple-300 hover:bg-purple-500/30 text-xs font-orbitron inline-flex items-center space-x-2">
+                    <i class="fas fa-volume-high"></i> <span>Replay Panelist Voice</span>
+                </button>
+            </div>
+
+            <!-- Answer Input Area -->
+            <div class="space-y-4 mb-6">
+                <label class="block text-xs font-orbitron text-gray-400 uppercase">
+                    Your Defense Response (Letters & Spaces ONLY. No periods!):
+                </label>
+                <div class="relative">
+                    <textarea id="user-answer-input" rows="3" oninput="handleTypingInput(event)" placeholder="Type your precise memorized answer here..." class="w-full bg-cyber-bg border border-cyan-500/40 focus:border-cyan-400 rounded-xl p-4 text-white font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500/30 resize-none"></textarea>
+                </div>
+                <div class="flex items-center justify-between text-xs text-gray-400">
+                    <span id="typing-feedback-hint" class="text-yellow-400"><i class="fas fa-info-circle mr-1"></i> Rule: Only letters and spaces allowed. Words checked sequentially.</span>
+                    <span id="char-count">0 chars</span>
+                </div>
+            </div>
+
+            <!-- Action Controls -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-gray-800">
+                <button onclick="backToWelcome()" class="px-4 py-2 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 font-orbitron text-xs">
+                    <i class="fas fa-home mr-2"></i> Abort / Menu
+                </button>
+                <div class="flex items-center space-x-3 w-full sm:w-auto">
+                    <button onclick="skipQuestion()" class="w-full sm:w-auto px-5 py-3 rounded-xl bg-gray-800 border border-gray-700 text-gray-300 font-orbitron text-xs hover:bg-gray-700 transition">
+                        Skip Question <i class="fas fa-forward ml-1"></i>
+                    </button>
+                    <button onclick="submitAnswer()" class="w-full sm:w-auto px-8 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-orbitron font-bold text-sm shadow-neon hover:from-cyan-400 hover:to-blue-500 transition">
+                        SUBMIT DEFENSE <i class="fas fa-paper-plane ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCREEN 4: RESULTS / DEBRIEF -->
+        <div id="screen-results" class="hidden cyber-card rounded-2xl p-6 md:p-10 text-center">
+            <div class="w-20 h-20 mx-auto rounded-2xl bg-cyan-500/20 border-2 border-cyan-400 flex items-center justify-center text-cyan-400 text-3xl glow-text mb-6">
+                <i class="fas fa-trophy"></i>
+            </div>
+            <h3 class="font-orbitron text-2xl md:text-3xl font-extrabold text-white mb-2">Defense Simulation Complete</h3>
+            <p class="text-gray-400 text-sm mb-6">Here is your performance breakdown for your thesis defense prep.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div class="p-5 rounded-xl bg-cyber-bg border border-cyan-500/30">
+                    <div class="text-gray-400 text-xs font-orbitron uppercase mb-1">Final Score</div>
+                    <div id="final-score-val" class="font-orbitron text-3xl font-bold text-cyan-400 glow-text">0 pts</div>
+                </div>
+                <div class="p-5 rounded-xl bg-cyber-bg border border-purple-500/30">
+                    <div class="text-gray-400 text-xs font-orbitron uppercase mb-1">Correct Answers</div>
+                    <div id="final-correct-val" class="font-orbitron text-3xl font-bold text-purple-400">0 / 53</div>
+                </div>
+                <div class="p-5 rounded-xl bg-cyber-bg border border-pink-500/30">
+                    <div class="text-gray-400 text-xs font-orbitron uppercase mb-1">Accuracy Rate</div>
+                    <div id="final-accuracy-val" class="font-orbitron text-3xl font-bold text-pink-400">0%</div>
+                </div>
+            </div>
+
+            <div class="bg-cyber-bg/80 border border-gray-800 rounded-xl p-6 text-left mb-8 max-h-48 overflow-y-auto">
+                <h4 class="font-orbitron text-sm text-yellow-400 font-bold mb-3"><i class="fas fa-clipboard-list mr-2"></i> Areas for Improvement & Feedback:</h4>
+                <ul id="feedback-list" class="space-y-2 text-xs md:text-sm text-gray-300">
+                    <!-- Injected feedback -->
+                </ul>
+            </div>
+
+            <div class="flex justify-center space-x-4">
+                <button onclick="backToWelcome()" class="px-8 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-orbitron font-bold text-sm shadow-neon hover:opacity-95 transition">
+                    <i class="fas fa-redo mr-2"></i> TRY AGAIN
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="relative z-10 border-t border-gray-800 bg-cyber-bg/80 py-4 text-center text-xs text-gray-500">
+        Thesis Memorization Game &bull; Factors That Influence Students Using AI for Illustration and Design &bull; LPU MMA
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // --- THESIS DATASET ---
+        const thesisQuestions = [
+            { q: "What is AI?", a: "Technology that simulates human intelligence" },
+            { q: "What are the types of AI?", a: "Narrow AI General AI and Super AI" },
+            { q: "What are examples of AI tools?", a: "ChatGPT Gemini Firefly and Canva AI" },
+            { q: "What are the advantages and disadvantages of AI?", a: "Saves time but may cause dependence" },
+            { q: "Why did you choose this topic?", a: "To understand students AI use" },
+            { q: "How does AI affect students creativity?", a: "It supports creativity but may cause dependence" },
+            { q: "How can students use AI responsibly?", a: "By checking outputs and maintaining originality" },
+            { q: "What if there is no AI?", a: "Students can use traditional methods" },
+            { q: "Can AI replace human creativity?", a: "No human creativity remains important" },
+            { q: "What is your main recommendation?", a: "Use AI responsibly and maintain creativity" },
+            { q: "What is the relevance of your research?", a: "To promote responsible AI use in design" },
+            { q: "What is the importance of your research?", a: "To encourage creativity and responsible AI use" },
+            { q: "What are the uses of AI?", a: "For learning creativity and productivity" },
+            { q: "Can you live in this world without AI?", a: "Yes through traditional methods" },
+            { q: "If you use AI with critical thinking can you improve originality?", a: "Yes by using personal creativity" },
+            { q: "Without AI can students study very well?", a: "Yes through traditional learning" },
+            { q: "Without AI will students studies be affected?", a: "Yes some tasks take longer" },
+            { q: "Who is smarter AI or students?", a: "Students through critical thinking" },
+            { q: "What is the difference between illustration and design?", a: "Illustration creates artwork design communicates ideas" },
+            { q: "What is ChatGPT used for?", a: "Generating images ideas and prompts" },
+            { q: "What is Google Gemini used for?", a: "Generating images and creative ideas" },
+            { q: "What is Adobe Firefly used for?", a: "Generating and editing images" },
+            { q: "What is Canva AI used for?", a: "Creating posters presentations and graphic designs" },
+            { q: "Which AI tool is best for graphic design?", a: "Canva AI is useful for creating finished layouts" },
+            { q: "What are the types of AI used in illustration and design?", a: "Text to image image editing vector layout 3D typography and design assistant AI" },
+            { q: "What is text to image AI?", a: "It creates images from text" },
+            { q: "What is image to image AI?", a: "It transforms images" },
+            { q: "What is generative fill AI?", a: "It edits image parts" },
+            { q: "What is vector AI?", a: "It creates scalable graphics" },
+            { q: "What is layout AI?", a: "It creates design layouts" },
+            { q: "What is 3D AI?", a: "It creates 3D objects" },
+            { q: "What is typography AI?", a: "It assists with fonts and lettering" },
+            { q: "What is design assistant AI?", a: "It automates design tasks" },
+            { q: "What is the Technology Acceptance Model?", a: "It explains technology use through usefulness and ease" },
+            { q: "What is your Methodology?", a: "It uses surveys and correlation analysis" },
+            { q: "What is your Analysis and Discussion?", a: "Explaining the survey results and findings" },
+            { q: "What is your Data Analysis?", a: "Using correlation to identify relationships between variables" },
+            { q: "What is your Correlation?", a: "It measures relationships between variables" },
+            { q: "What is your Project Plan?", a: "A timeline for reviewing surveying analyzing and revising the research" },
+            { q: "What is your Project Evaluation?", a: "Assessing the projects results" },
+            { q: "What is your Implementation Plan?", a: "Conducting surveys and analyzing data" },
+            { q: "What is your Project Sustainability?", a: "Keeping the project useful" },
+            { q: "What is your Expected Conclusion?", a: "AI may improve creativity and productivity" },
+            { q: "Without AI does it affect society?", a: "Yes tasks may take longer" },
+            { q: "With AI does it affect society?", a: "Yes it improves productivity but has risks" },
+            { q: "Can society survive without AI?", a: "Yes through human skills" },
+            { q: "Can students create illustrations without AI?", a: "Yes through drawing" },
+            { q: "Can students design without AI?", a: "Using traditional skills" },
+            { q: "Is AI better than human creativity?", a: "No human originality matters" },
+            { q: "Does AI improve students learning?", a: "Yes when used responsibly" },
+            { q: "Can AI negatively affect students?", a: "Yes through overdependence" },
+            { q: "Why is originality important?", a: "It shows personal creativity" },
+            { q: "What is the purpose of your research?", a: "To identify factors influencing AI use" }
+        ];
+
+        const slidePreviews = [
+            "SLIDE 1: Good morning to our dearest panelist may I present to you my thesis slideshow preview for my topic entitled <span class='highlight-yellow'>Factors that influence students using artificial intelligence for illustration and design</span> then later on let us show you my discussion on this thesis defense.",
+            "SLIDE 2: AI helps students accelerate creative work, but this study examines its <span class='highlight-yellow'>full impact on their skills, opportunities, and risks</span>.",
+            "SLIDE 3: For the AI tools evaluated: <span class='highlight-yellow'>ChatGPT, Gemini, Firefly, and Canva AI</span>.",
+            "SLIDE 4: According to recent reports, <span class='highlight-yellow'>42.4% of Filipino internet users and 83% of Filipino students use AI</span> (ASEAN Foundation, 2026). Promotes responsible AI use.",
+            "SLIDE 5: Objectives: <span class='highlight-yellow'>To identify the factors, relationships, benefits, and disadvantages of AI use</span>.",
+            "SLIDE 6: Study guided by questions on AI usage, its impacts, and balancing with manual skills.",
+            "SLIDE 7: Scope and limitations: <span class='highlight-yellow'>30 LPU Multimedia Arts students, using simple regression</span>.",
+            "SLIDE 8: Tools evaluated: ChatGPT for brainstorming, Gemini for reasoning, Canva AI for layouts, Adobe Firefly for commercial-safe professional design.",
+            "SLIDE 9: Theoretical framework: <span class='highlight-yellow'>TAM (Technology Acceptance Model) focuses on perceived usefulness and perceived ease of use</span>.",
+            "SLIDE 10: The questionnaire consists of <span class='highlight-yellow'>30 items across 10 thematic areas</span>.",
+            "SLIDE 11: The model tests these <span class='highlight-yellow'>9 variables leading to AI use</span>.",
+            "SLIDE 12: Demographics: <span class='highlight-yellow'>26 MMA student respondents, consisting of 12 males and 14 females</span>.",
+            "SLIDE 13: Findings show frequent AI use for creative tasks, study content, and devices.",
+            "SLIDE 14: Results show proficiency, preferred tools, and impact on creativity.",
+            "SLIDE 15: Results cover originality, proficiency, motivation, and frequency of use.",
+            "SLIDE 16: Results show daily hours spent and years of experience using AI.",
+            "SLIDE 17: <span class='highlight-yellow'>24 variables show a significant relationship with intention to use AI, while 5 variables show no significant relationship</span>.",
+            "SLIDE 18: In conclusion, <span class='highlight-yellow'>AI may improve creativity and productivity</span>.",
+            "SLIDE 19: Recommendations: <span class='highlight-yellow'>Use AI responsibly and maintain creativity</span>. That's the end of my defense thank you!"
+        ];
+
+        const variablesInfo = [
+            "THE 9 VARIABLES (TAM & Extended Factors):",
+            "1. <span class='highlight-yellow'>Perceived Usefulness & Productivity (UP)</span>: 6 items (easy design, time-saving, convenience, faster tasks, productivity, effectiveness).",
+            "2. <span class='highlight-yellow'>Creativity & Idea Generation (CI)</span>: 6 items (new ideas, better ideas, experimentation, creative thinking, idea development).",
+            "3. <span class='highlight-yellow'>Learning, Skills & Confidence (LS)</span>: 5 items (design skills, easier learning, confidence, digital literacy).",
+            "4. <span class='highlight-yellow'>Concerns & Risks (CR)</span>: 4 items (loss of originality, reduced creativity, AI dependence, copyright issues).",
+            "5. <span class='highlight-yellow'>Design Assistance & Quality (DQ)</span>: 2 items (layout selection, design quality).",
+            "6. <span class='highlight-yellow'>Social Influence (SI)</span>: 2 items (classmate influence, student recommendations).",
+            "7. <span class='highlight-yellow'>Accessibility & Facilitating Conditions (AF)</span>: 2 items (limited devices, easy AI access).",
+            "8. <span class='highlight-yellow'>Traditional/Freehand Design Preference (TF)</span>: 1 item (preference for freehand over AI).",
+            "9. <span class='highlight-yellow'>Ethical/Transparent Use (ET)</span>: 1 item (disclosure of AI use)."
+        ];
+
+        // --- APP STATE ---
+        let currentScore = 0;
+        let currentQuestionIndex = 0;
+        let speechEnabled = true;
+        let reviewTimerInterval = null;
+        let defenseTimerInterval = null;
+        let reviewTimeLeft = 30 * 60; // 30 minutes
+        let defenseTimeLeft = 15 * 60; // 15 minutes
+        let defenseAnswersLog = [];
+
+        // --- SPEECH SYNTHESIS HELPER ---
+        function speakText(text) {
+            if (!speechEnabled || !('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel(); // Stop any ongoing speech
+            // Strip HTML tags for clean speech
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = text;
+            const cleanText = tempDiv.textContent || tempDiv.innerText || "";
+            
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.rate = 1.05;
+            utterance.pitch = 1.0;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function toggleAudio() {
+            speechEnabled = !speechEnabled;
+            const btnText = document.getElementById('audio-text');
+            const icon = document.getElementById('audio-icon');
+            if (speechEnabled) {
+                btnText.textContent = "Voice: ON";
+                icon.className = "fas fa-volume-up";
+                speakText("Voice assistance activated.");
+            } else {
+                btnText.textContent = "Voice: OFF";
+                icon.className = "fas fa-volume-mute";
+                window.speechSynthesis.cancel();
+            }
+        }
+
+        // --- SCREEN NAVIGATION ---
+        function hideAllScreens() {
+            document.getElementById('screen-welcome').classList.add('hidden');
+            document.getElementById('screen-review').classList.add('hidden');
+            document.getElementById('screen-defense').classList.add('hidden');
+            document.getElementById('screen-results').classList.add('hidden');
+        }
+
+        function backToWelcome() {
+            clearInterval(reviewTimerInterval);
+            clearInterval(defenseTimerInterval);
+            window.speechSynthesis.cancel();
+            hideAllScreens();
+            document.getElementById('screen-welcome').classList.remove('hidden');
+        }
+
+        // --- PHASE 1: REVIEW MODE ---
+        function startReviewMode() {
+            hideAllScreens();
+            document.getElementById('screen-review').classList.remove('hidden');
+            switchReviewTab('slides');
+            startReviewTimer();
+            speakText("Starting 30 minute review mode. Master the highlighted keywords for your thesis defense.");
+        }
+
+        function startReviewTimer() {
+            clearInterval(reviewTimerInterval);
+            reviewTimerInterval = setInterval(() => {
+                reviewTimeLeft--;
+                const mins = Math.floor(reviewTimeLeft / 60);
+                const secs = reviewTimeLeft % 60;
+                document.getElementById('review-timer').textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                if (reviewTimeLeft <= 0) {
+                    clearInterval(reviewTimerInterval);
+                    alert("Review time completed! Proceeding to defense simulation.");
+                    startDefenseMode();
+                }
+            }, 1000);
+        }
+
+        function switchReviewTab(tab) {
+            const container = document.getElementById('review-content-box');
+            const btnSlides = document.getElementById('tab-btn-slides');
+            const btnQuestions = document.getElementById('tab-btn-questions');
+            const btnVariables = document.getElementById('tab-btn-variables');
+
+            // Reset buttons
+            btnSlides.className = "px-4 py-2 rounded-lg font-orbitron text-xs bg-cyber-panel text-gray-300 border border-gray-700 hover:border-cyan-500 transition";
+            btnQuestions.className = "px-4 py-2 rounded-lg font-orbitron text-xs bg-cyber-panel text-gray-300 border border-gray-700 hover:border-cyan-500 transition";
+            btnVariables.className = "px-4 py-2 rounded-lg font-orbitron text-xs bg-cyber-panel text-gray-300 border border-gray-700 hover:border-cyan-500 transition";
+
+            if (tab === 'slides') {
+                btnSlides.className = "px-4 py-2 rounded-lg font-orbitron text-xs bg-cyan-500 text-black font-bold transition";
+                container.innerHTML = slidePreviews.map(s => `<div class="p-3 rounded-lg bg-cyber-panel border border-cyan-500/20 mb-3">${s}</div>`).join('');
+                speakText("Loaded slide previews 1 to 19.");
+            } else if (tab === 'questions') {
+                btnQuestions.className = "px-4 py-2 rounded-lg font-orbitron text-xs bg-cyan-500 text-black font-bold transition";
+                container.innerHTML = thesisQuestions.map((item, idx) => `
+                    <div class="p-3 rounded-lg bg-cyber-panel border border-purple-500/20 mb-3">
+                        <div class="text-cyan-400 font-bold mb-1">Q${idx+1}: ${item.q}</div>
+                        <div class="text-gray-300"><strong class="text-yellow-400">Target Answer:</strong> ${item.a}</div>
+                    </div>
+                `).join('');
+                speakText("Loaded panel questions.");
+            } else if (tab === 'variables') {
+                btnVariables.className = "px-4 py-2 rounded-lg font-orbitron text-xs bg-cyan-500 text-black font-bold transition";
+                container.innerHTML = variablesInfo.map(v => `<div class="p-3 rounded-lg bg-cyber-panel border border-pink-500/20 mb-3">${v}</div>`).join('');
+                speakText("Loaded research variables and framework data.");
+            }
+        }
+
+        function speakCurrentReviewText() {
+            const container = document.getElementById('review-content-box');
+            speakText(container.innerText);
+        }
+
+        // --- PHASE 2: DEFENSE SIMULATION MODE ---
+        function startDefenseMode() {
+            clearInterval(reviewTimerInterval);
+            hideAllScreens();
+            document.getElementById('screen-defense').classList.remove('hidden');
+            currentQuestionIndex = 0;
+            currentScore = 0;
+            defenseAnswersLog = [];
+            updateScoreDisplay();
+            loadDefenseQuestion();
+            startDefenseTimer();
+            speakText("Defense simulation started. 15 minutes remaining. Answer using letters and spaces only.");
+        }
+
+        function startDefenseTimer() {
+            clearInterval(defenseTimerInterval);
+            defenseTimerInterval = setInterval(() => {
+                defenseTimeLeft--;
+                const mins = Math.floor(defenseTimeLeft / 60);
+                const secs = defenseTimeLeft % 60;
+                document.getElementById('defense-timer').textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                if (defenseTimeLeft <= 0) {
+                    clearInterval(defenseTimerInterval);
+                    finishDefenseSimulation();
+                }
+            }, 1000);
+        }
+
+        function loadDefenseQuestion() {
+            if (currentQuestionIndex >= thesisQuestions.length) {
+                finishDefenseSimulation();
+                return;
+            }
+            const qObj = thesisQuestions[currentQuestionIndex];
+            document.getElementById('defense-progress-title').textContent = `Question ${currentQuestionIndex + 1} of ${thesisQuestions.length}`;
+            document.getElementById('current-question-text').textContent = qObj.q;
+            document.getElementById('user-answer-input').value = "";
+            document.getElementById('char-count').textContent = "0 chars";
+            
+            // Speak question
+            speakText(`Panelist asks: ${qObj.q}`);
+        }
+
+        function handleTypingInput(event) {
+            let val = event.target.value;
+            // Strict rule: NO PERIODS, only letters and spaces allowed
+            let sanitized = val.replace(/[^a-zA-Z\s]/g, '');
+            if (val !== sanitized) {
+                document.getElementById('typing-feedback-hint').innerHTML = `<span class="text-pink-400"><i class="fas fa-exclamation-triangle"></i> Periods or symbols detected! Only letters and spaces allowed.</span>`;
+                event.target.value = sanitized;
+            } else {
+                document.getElementById('typing-feedback-hint').innerHTML = `<i class="fas fa-info-circle mr-1"></i> Rule: Only letters and spaces allowed. Spacing checked sequentially.`;
+            }
+            document.getElementById('char-count').textContent = `${sanitized.length} chars`;
+        }
+
+        function speakCurrentQuestion() {
+            const qObj = thesisQuestions[currentQuestionIndex];
+            speakText(qObj.q);
+        }
+
+        function skipQuestion() {
+            defenseAnswersLog.push({
+                q: thesisQuestions[currentQuestionIndex].q,
+                expected: thesisQuestions[currentQuestionIndex].a,
+                user: "(Skipped)",
+                correct: false
+            });
+            currentScore -= 5; // Penalty for skipping
+            updateScoreDisplay();
+            currentQuestionIndex++;
+            loadDefenseQuestion();
+        }
+
+        function submitAnswer() {
+            const userRaw = document.getElementById('user-answer-input').value.trim().toLowerCase();
+            const qObj = thesisQuestions[currentQuestionIndex];
+            const expectedClean = qObj.a.toLowerCase().replace(/[^a-zA-Z\s]/g, '').replace(/\s+/g, ' ').trim();
+            const userClean = userRaw.replace(/\s+/g, ' ').trim();
+
+            // Word-by-word comparison for scoring
+            const expectedWords = expectedClean.split(' ');
+            const userWords = userClean.split(' ');
+
+            let matchedWords = 0;
+            expectedWords.forEach((word, idx) => {
+                if (userWords[idx] === word) {
+                    matchedWords++;
+                }
+            });
+
+            const accuracyRatio = matchedWords / expectedWords.length;
+            let pointsEarned = 0;
+            let isCorrect = false;
+
+            if (accuracyRatio >= 0.75) {
+                pointsEarned = 15;
+                currentScore += pointsEarned;
+                isCorrect = true;
+                speakText("Correct answer! Good job.");
+            } else if (accuracyRatio >= 0.4) {
+                pointsEarned = 5;
+                currentScore += pointsEarned;
+                isCorrect = true;
+                speakText("Acceptable answer, but needs minor polishing.");
+            } else {
+                pointsEarned = -10; // Minus points for wrong or weak input
+                currentScore += pointsEarned;
+                speakText("Incorrect or insufficient keywords. Minus points.");
+            }
+
+            defenseAnswersLog.push({
+                q: qObj.q,
+                expected: qObj.a,
+                user: userRaw || "(No input)",
+                correct: isCorrect,
+                points: pointsEarned
+            });
+
+            updateScoreDisplay();
+            currentQuestionIndex++;
+            loadDefenseQuestion();
+        }
+
+        function updateScoreDisplay() {
+            document.getElementById('header-score').textContent = currentScore;
+            document.getElementById('defense-score').textContent = currentScore;
+        }
+
+        function finishDefenseSimulation() {
+            clearInterval(defenseTimerInterval);
+            window.speechSynthesis.cancel();
+            hideAllScreens();
+            document.getElementById('screen-results').classList.remove('hidden');
+
+            const correctCount = defenseAnswersLog.filter(item => item.correct).length;
+            const totalQ = thesisQuestions.length;
+            const accuracyPercent = Math.round((correctCount / totalQ) * 100);
+
+            document.getElementById('final-score-val').textContent = `${currentScore} pts`;
+            document.getElementById('final-correct-val').textContent = `${correctCount} / ${totalQ}`;
+            document.getElementById('final-accuracy-val').textContent = `${accuracyPercent}%`;
+
+            const feedbackUl = document.getElementById('feedback-list');
+            feedbackUl.innerHTML = "";
+
+            if (accuracyPercent >= 80) {
+                feedbackUl.innerHTML += `<li class="text-cyan-400"><i class="fas fa-check-circle mr-2"></i> Outstanding defense preparation! You successfully mastered the yellow highlighted thesis texts and panel questions.</li>`;
+            } else if (accuracyPercent >= 50) {
+                feedbackUl.innerHTML += `<li class="text-yellow-400"><i class="fas fa-exclamation-triangle mr-2"></i> Moderate grasp of thesis defense data. Review variable terms (UP, CR, LS, DQ) and exact expected answers.</li>`;
+            } else {
+                feedbackUl.innerHTML += `<li class="text-pink-400"><i class="fas fa-times-circle mr-2"></i> Needs intensive review! Re-read the yellow highlighted items in Phase 1 to improve keyword retention.</li>`;
+            }
+
+            defenseAnswersLog.slice(0, 8).forEach(log => {
+                feedbackUl.innerHTML += `<li><strong class="text-white">${log.q}</strong><br><span class="text-gray-400">Your answer:</span> ${log.user} | <span class="text-cyan-400">Expected:</span> ${log.expected}</li>`;
+            });
+
+            speakText(`Defense simulation completed. Final score: ${currentScore} points.`);
+        }
+
+        // --- MATRIX BACKGROUND ANIMATION ---
+        window.onload = function() {
+            const canvas = document.getElementById('bg-canvas');
+            const ctx = canvas.getContext('2d');
+
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            const chars = "01THESISDEFENSEAIUPCRIQLS";
+            const fontSize = 14;
+            const columns = Math.floor(canvas.width / fontSize);
+            const drops = Array(columns).fill(1);
+
+            function drawMatrix() {
+                ctx.fillStyle = 'rgba(7, 10, 20, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.fillStyle = '#00ffcc';
+                ctx.font = `${fontSize}px monospace`;
+
+                for (let i = 0; i < drops.length; i++) {
+                    const text = chars.charAt(Math.floor(Math.random() * chars.length));
+                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                        drops[i] = 0;
+                    }
+                    drops[i]++;
+                }
+            }
+            setInterval(drawMatrix, 50);
+        };
+    </script>
+</body>
+</html>
